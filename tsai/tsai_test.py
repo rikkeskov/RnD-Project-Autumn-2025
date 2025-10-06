@@ -3,12 +3,17 @@ import numpy
 from tsai.all import *
 import sklearn.metrics as skm
 
-print(get_UCR_univariate_list())
+#print(get_UCR_univariate_list())
 
-dsid = 'AppliancesEnergy' 
+dsid = 'HouseholdPowerConsumption1' 
 PATH = Path('./models/Regression.pkl')
 
 X, y, splits = get_regression_data(dsid, split_data=False)
+check_data(X,y,splits, False)
+
+print(y)
+#numpy.savetxt("floodModeling1_test.csv", np.reshape(X[1], -1), delimiter=",")
+
 tfms  = [None, [TSRegression()]]
 batch_tfms = TSStandardize(by_sample=True, by_var=True)
 dls = get_ts_dls(X, y, splits=splits, tfms=tfms, batch_tfms=batch_tfms, bs=128)
