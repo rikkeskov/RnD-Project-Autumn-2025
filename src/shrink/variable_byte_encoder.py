@@ -50,13 +50,13 @@ class VariableByteEncoder:
         shift = 0
 
         while True:
-            inp = in_stream.read(1)
+            inp: bytes = in_stream.read(1)
             if not inp:
                 break
-            inp = inp[0]
-            num |= (inp & 0x7F) << shift
+            inp_num: int = inp[0]
+            num |= (inp_num & 0x7F) << shift
             shift += 7
-            if not inp & 0x80:
+            if not inp_num & 0x80:
                 break
 
         if num & 1:
@@ -66,7 +66,7 @@ class VariableByteEncoder:
         return num
 
 
-def test_variable_byte_encoder():
+def test_variable_byte_encoder() -> None:
     "Test variable byte encoder on random data."
     random_numbers = [random.randint(-1000000, 1000000) for _ in range(10)]
 
@@ -90,5 +90,5 @@ if __name__ == "__main__":
         encoded_bytes = output_stream.getvalue()
 
         print(f"Original number: {number}")
-        print(f"Encoded bytes: {encoded_bytes}")
+        print(f"Encoded bytes: {encoded_bytes!r}")
         print(f"Encoded length: {len(encoded_bytes)} bytes")

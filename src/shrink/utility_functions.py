@@ -70,7 +70,7 @@ def plot_two_line_graphs(
     points2: list[Point],
     end: int = 100,
     title: str = "Two Line Graphs on One Plot",
-):
+) -> None:
     """
     Draw two line charts on one graph.
     Parameters:

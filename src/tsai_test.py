@@ -2,7 +2,7 @@
 
 import logging
 from tsai.all import Path  # type: ignore
-from .data.data_preparation import ts_to_csv_and_pd_dataframe
+from .data.data_preparation import ts_to_pd_dataframe
 
 
 DSID = "BIDMC32RR"
@@ -14,10 +14,10 @@ for split in ["TEST", "TRAIN"]:
     fname: Path = Path(PATH) / f"{DSID}/{DSID}_{split}.ts"
     try:
         if split == "TRAIN":
-            X_train, y_train = ts_to_csv_and_pd_dataframe(fname)
+            X_train, y_train = ts_to_pd_dataframe(fname)
             # X_train = _check_X(X_train)
         else:
-            X_valid, y_valid = ts_to_csv_and_pd_dataframe(fname)
+            X_valid, y_valid = ts_to_pd_dataframe(fname)
             # X_valid = _check_X(X_valid)
     except ValueError as inst:
         logging.error(

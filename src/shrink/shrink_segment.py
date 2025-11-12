@@ -18,7 +18,7 @@ class ShrinkSegment:
         self.b = b
         self.score = 1  # outlier score
 
-    def round_to_least_decimal(self, a_min: float, a_max: float):
+    def round_to_least_decimal(self, a_min: float, a_max: float) -> float:
         "Round to least decimal place."
         a = (a_min + a_max) / 2
         # Determine the number of decimal places in aMin and aMax
@@ -36,7 +36,7 @@ class ShrinkSegment:
         rounded_a = round(a, min_decimal_places)
         return rounded_a
 
-    def count_matching_digits(self, num1: float, num2: float):
+    def count_matching_digits(self, num1: float, num2: float) -> int:
         "Count matching digits."
         if math.isinf(num1) or math.isinf(num1):
             return -1
@@ -58,7 +58,7 @@ class ShrinkSegment:
             return 0
         return count
 
-    def truncate_to_n_decimal_places(self, number: float, n: int):
+    def truncate_to_n_decimal_places(self, number: float, n: int) -> float:
         "Enlarge to n decimal places."
         scaled_number = number * (
             10**n
@@ -68,22 +68,22 @@ class ShrinkSegment:
         return truncated_number
 
     @property
-    def get_init_timestamp(self):
+    def get_init_timestamp(self) -> int:
         "Initial timestamp."
         return self.init_timestamp
 
     @property
-    def get_a_min(self):
+    def get_a_min(self) -> float:
         "Minimum of a."
         return self.a_min
 
     @property
-    def get_a_max(self):
+    def get_a_max(self) -> float:
         "Maximum of a."
         return self.a_max
 
     @property
-    def get_a(self):
+    def get_a(self) -> float:
         "A in itself."
         if (self.a_max * self.a_min) < 0:
             self.a = 0
@@ -123,11 +123,11 @@ class ShrinkSegment:
         return self.a
 
     @property
-    def get_b(self):
+    def get_b(self) -> float:
         "Get actual b."
         return self.b
 
-    def show(self):
+    def show(self) -> None:
         "Print method."
         print("[ ", self.get_init_timestamp, ", ", self.a, ", ", self.b, "]")
 

@@ -12,17 +12,17 @@ class FloatEncoder:
     """
 
     @staticmethod
-    def write(number: float, output_stream: BytesIO):
+    def write(number: float, output_stream: BytesIO) -> bytes:
         "Write float to bytes."
         int_bits = struct.pack(">f", number)
         output_stream.write(int_bits)
         return int_bits
 
     @staticmethod
-    def read(input_stream: BytesIO):
+    def read(input_stream: BytesIO) -> float:
         "Read float from bytearray."
         int_bits = input_stream.read(4)
-        number = struct.unpack(">f", int_bits)[0]
+        number: float = struct.unpack(">f", int_bits)[0]
         return number
 
 

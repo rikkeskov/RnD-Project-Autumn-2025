@@ -7,7 +7,7 @@ import csv
 import time
 import numpy as np
 
-from shrink.constants import (
+from .shrink.constants import (
     QUANTRC_NORMALIZATION,
     TURBO_RANGE_CODER_CODES_OUT_PATH,
     TURBO_CODE_LOCATION,
@@ -45,28 +45,30 @@ def load(data: np.ndarray[Any, Any]) -> dict[str, float]:
     return compression_stats
 
 
-def compress(in_path: str, out_path: str):
+def compress(in_path: str, out_path: str) -> None:
     """Command line compression."""
     command = f"{TURBO_CODE_LOCATION} -{TURBO_CODE_PARAMETER} {in_path} {out_path}"
     print("command: ", command)
     os.system(command)
 
 
-def decompress(compressed_path: str, out_path: str):
+def decompress(compressed_path: str, out_path: str) -> None:
     """Command line decompression."""
     command = f"{TURBO_CODE_LOCATION} -d {compressed_path} {out_path}"
     print("command: ", command)
     os.system(command)
 
 
-def calculate_compression_ratio(original_file_path: str, compressed_file_path: str):
+def calculate_compression_ratio(
+    original_file_path: str, compressed_file_path: str
+) -> float:
     "Calculate compression ratio."
     # print("Original size: ", os.path.getsize(originalFile))
     # print("CompressedSize", os.path.getsize(compressedFile))
     return os.path.getsize(compressed_file_path) / os.path.getsize(original_file_path)
 
 
-def equal_or_not(file1_path: str, file2_path: str):
+def equal_or_not(file1_path: str, file2_path: str) -> None:
     "Compare files."
     # Create two empty lists to store the data in the file
     data1: list[float] = []

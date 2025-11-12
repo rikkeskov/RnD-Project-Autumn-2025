@@ -22,10 +22,10 @@ class Point:
         "Value for point in time series."
         return self._value
 
-    def add(self, val: float):
+    def add(self, val: float) -> None:
         "Add to value."
         self._value += val
 
-    def set(self, val: float):
+    def set(self, val: float) -> None:
         "Set value."
         self._value = val

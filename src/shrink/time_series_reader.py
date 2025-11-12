@@ -11,7 +11,7 @@ class TimeSeriesReader:
     """Ready for time series data type."""
 
     @staticmethod
-    def get_time_series(csv_file: str):
+    def get_time_series(csv_file: str) -> TimeSeries:
         """Get time series."""
         points: list[Point] = []
         max_val = float("-inf")

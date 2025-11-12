@@ -13,6 +13,6 @@ class TimeSeries:
         self.data_range = data_range
         self.size = len(data) * (4 + 4)
 
-    def length(self):
+    def length(self) -> int:
         "Length of data"
         return len(self.data)

@@ -13,7 +13,7 @@ from tsai.all import Path  # type: ignore
 DSID = "BIDMC32RR"
 
 
-def ts_to_csv_and_pd_dataframe(
+def ts_to_pd_dataframe(
     full_file_path_and_name: Path,
     return_separate_x_and_y: bool = True,
     replace_missing_vals_with: str = "NaN",
@@ -364,7 +364,7 @@ def ts_to_csv_and_pd_dataframe(
 
                                         try:
                                             value = tuple_data[last_comma_index + 1 :]
-                                            value = float(value)
+                                            value_f = float(value)
 
                                         except ValueError as exc:
                                             raise ValueError(
@@ -466,7 +466,7 @@ def ts_to_csv_and_pd_dataframe(
                                         # Store the values
 
                                         timestamps_for_dimension += [timestamp]
-                                        values_for_dimension += [value]
+                                        values_for_dimension += [value_f]
 
                                         # If this was our first tuple
                                         # then we store the type of timestamp we had
@@ -715,3 +715,13 @@ def ts_to_csv_and_pd_dataframe(
             return data
     else:
         raise ValueError("empty file")
+
+
+def pd_dataframe_to_csv(
+    data: pd.DataFrame, target_filepath: str, separate_x_and_y: bool = True
+) -> bool:
+    """make the data into a CSV ready for Shrink."""
+    if not separate_x_and_y:
+        return False
+    data.to_csv(target_filepath)
+    return True
