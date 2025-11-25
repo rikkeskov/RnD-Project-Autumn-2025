@@ -1,28 +1,56 @@
 """TSAI"""
 
+import sys
+import os
 import logging
+import pandas as pd
 from tsai.all import Path  # type: ignore
-from .data.data_preparation import ts_to_pd_dataframe
 
+# Ensure project root is on sys.path so absolute imports work when running this module as a script
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-DSID = "BIDMC32RR"
-SPLIT_DATA = False
-FULL_TARGET_DIR = "./data/Monash/" + DSID
-PATH = "./data/Monash"
+from data_preparation import ts_to_pd_dataframe, pd_dataframe_to_csv
 
-for split in ["TEST", "TRAIN"]:
-    fname: Path = Path(PATH) / f"{DSID}/{DSID}_{split}.ts"
-    try:
-        if split == "TRAIN":
-            X_train, y_train = ts_to_pd_dataframe(fname)
-            # X_train = _check_X(X_train)
-        else:
-            X_valid, y_valid = ts_to_pd_dataframe(fname)
-            # X_valid = _check_X(X_valid)
-    except ValueError as inst:
-        logging.error(
-            "Cannot create numpy arrays for %s dataset. Error: %s", DSID, inst
+def save_ts_to_csv():
+    # DSID = ["HouseholdPowerConsumption1", "HouseholdPowerConsumption2", "BeijingPM10Quality", "BeijingPM25Quality"],
+    DSID = "HouseholdPowerConsumption1"
+    SPLIT_DATA = False  # type: ignore
+    FULL_TARGET_DIR = "./data/" + DSID
+    PATH = "./data/downloaded"
+
+    for split in ["TEST", "TRAIN"]:
+        fname: Path = Path(PATH) / f"{DSID}_{split}.ts"
+        try:
+            if split == "TRAIN":
+                X_train, y_train = ts_to_pd_dataframe(fname)  # type: ignore
+                if not isinstance(X_train, pd.DataFrame):
+                    break
+                pd_dataframe_to_csv(X_train, FULL_TARGET_DIR+"_"+split+".csv")
+            else:
+                X_valid, y_valid = ts_to_pd_dataframe(fname) # type: ignore
+                if not isinstance(X_valid, pd.DataFrame):
+                    break
+                pd_dataframe_to_csv(X_valid, FULL_TARGET_DIR+"_"+split+".csv")
+        except ValueError as inst:
+            logging.error(
+                "Cannot create numpy arrays for %s dataset. Error: %s", DSID, inst
+            )
+
+def save_multidim_to_csv():
+    # "BIDMC32RR" uses raw CSV because of windowing in TS data
+    DSID = "BIDMC32"
+    FULL_TARGET_DIR = "./data/" + DSID
+    PATH = "./data/from_csv"
+    df = pd.read_csv(PATH+"/"+DSID+".csv") # type: ignore
+    print(df.head())
+    headers: list[str] = df.columns.values.tolist()
+    for header in headers:
+        df[header].to_csv(
+            f"{FULL_TARGET_DIR}_dim{header}.csv",
+            index=True,
+            header=False
         )
+
 # np.save(f'{full_tgt_dir}/X_train.npy', X_train)
 # np.save(f'{full_tgt_dir}/y_train.npy', y_train)
 # np.save(f'{full_tgt_dir}/X_valid.npy', X_valid)
@@ -35,13 +63,6 @@ for split in ["TEST", "TRAIN"]:
 # print(X.shape, y.shape)
 # check_data(X,y,splits, False)
 # new_X = np.reshape(X[0][1], -1)
-
-# with open("../data/HouseholdPowerConsumption1Row1.csv", 'w', newline='', encoding="utf-8") as csvfile:
-#     writer = csv.writer(csvfile)
-#     for i, value in zip(range(0, len(new_X), 1), new_X):
-#         writer.writerow([i, value])
-# print(y)
-# numpy.savetxt("floodModeling1_test.csv", np.reshape(X[1], -1), delimiter=",")
 
 # tfms  = [None, [TSRegression()]]
 # batch_tfms = TSStandardize(by_sample=True, by_var=True)

@@ -3,11 +3,15 @@
 from typing import Any
 from timeit import default_timer as timer
 import os
+import sys
 import csv
 import time
 import numpy as np
 
-from .shrink.constants import (
+# Ensure project root is on sys.path so absolute imports work when running this module as a script
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from shrink.constants import (
     QUANTRC_NORMALIZATION,
     TURBO_RANGE_CODER_CODES_OUT_PATH,
     TURBO_CODE_LOCATION,

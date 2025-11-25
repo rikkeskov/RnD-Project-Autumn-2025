@@ -3,22 +3,26 @@ Test module for Shrink Python implementation.
 """
 
 import os
+import sys
 import unittest
 from typing import List
 
 import matplotlib.pyplot as plt
 
-from .quan_trc import compress
-from .shrink.constants import (
+# Ensure project root is on sys.path so absolute imports work when running this module as a script
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from quan_trc import compress
+from shrink.constants import (
     BASE_FOLDER,
     DATA_PATH,
     TURBO_RANGE_CODER_CODES_BASE_PATH,
 )
-from .shrink.shrink import Shrink
-from .shrink.time_series_reader import TimeSeriesReader
-from .shrink.time_series import TimeSeries
-from .shrink.shrink_segment import ShrinkSegment
-from .shrink.point import Point
+from shrink.shrink import Shrink
+from shrink.time_series_reader import TimeSeriesReader
+from shrink.time_series import TimeSeries
+from shrink.shrink_segment import ShrinkSegment
+from shrink.point import Point
 
 
 class TestSHRINK(unittest.TestCase):
@@ -88,6 +92,7 @@ class TestSHRINK(unittest.TestCase):
         ts: TimeSeries = TimeSeries(data=[], data_range=0.0)
 
         for i, filename in enumerate(filenames):
+            print(f"File: {filename}")
             # 0. Set Base error
             base_epsilon: float = base_epsilons[i]
             print(f"Shrink: BaseEpsilon = {base_epsilon}")
@@ -224,18 +229,40 @@ class TestSHRINK(unittest.TestCase):
 
 if __name__ == "__main__":
     files = [
-        "/HouseholdPowerConsumption1Row1.csv",
-        "/HouseholdPowerConsumption1Row1.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
+        "/BIDMC32_dim PLETH.csv",
     ]  # , "MoteStrain.csv", "Lightning.csv", "Cricket.csv"]
     in_base_epsilons = [
+        0.01,
+        0.05,
         0.1,
         0.2,
+        0.4,
+        0.5,
+        0.8,
+        1.0,
+        1.2,
+        1.5,
+        2.
     ]  # [0.525],          0.85,             1.235,           1.14]
     in_epsilons = [
         0.01,
-        0.0075,
-        2.0,
+        0.05,
+        0.1,
+        0.2,
+        0.5,
         1.0,
+        2.0,
     ]  # [0.01, 0.0075], 0.005, 0.0025, 0.001, 0.00075, 0.0001, 0]
     test = TestSHRINK()
     originaldata, test_results = test.run_shrink_test(

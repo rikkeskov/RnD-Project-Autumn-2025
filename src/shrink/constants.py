@@ -2,9 +2,7 @@
 Path constants for Shrink package.
 """
 
-from ..data.data_preparation import DSID
-
-DATA_PATH = f"../data/{DSID}"
+DATA_PATH = f"./data"
 
 
 RESIDUALS_FOLDER = DATA_PATH + "/compressed/residuals"
@@ -22,7 +20,7 @@ OUTPUT_PATH_DEQUANTIRESIDUALS = RESIDUALS_FOLDER + "/dequantiresiduals.csv"
 OUTPUT_PATH_NEWORIGINAL = RESIDUALS_FOLDER + "/neworiginal.csv"
 
 QUANTRC_NORMALIZATION = "/quantrc_normalization.npy"
-TURBO_CODE_LOCATION = "..\\Turbo-Range-Coder\\turborc.exe"
+TURBO_CODE_LOCATION = ".\\Turbo-Range-Coder\\turborc.exe"
 TURBO_CODE_PARAMETER = "20"
 TURBO_RANGE_CODER_CODES_OUT_PATH = QUANTRC_FOLDER + "/codes.rc"
 TURBO_RANGE_CODER_NEWORIGINAL_OUT_PATH = QUANTRC_FOLDER + "/neworginal.csv"
