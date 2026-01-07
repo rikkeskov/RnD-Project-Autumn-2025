@@ -52,14 +52,14 @@ def load(data: np.ndarray[Any, Any]) -> dict[str, float]:
 def compress(in_path: str, out_path: str) -> None:
     """Command line compression."""
     command = f"{TURBO_CODE_LOCATION} -{TURBO_CODE_PARAMETER} {in_path} {out_path}"
-    print("command: ", command)
+    print("Compress command: ", command)
     os.system(command)
 
 
 def decompress(compressed_path: str, out_path: str) -> None:
     """Command line decompression."""
     command = f"{TURBO_CODE_LOCATION} -d {compressed_path} {out_path}"
-    print("command: ", command)
+    print("Decompress command: ", command)
     os.system(command)
 
 
@@ -67,8 +67,8 @@ def calculate_compression_ratio(
     original_file_path: str, compressed_file_path: str
 ) -> float:
     "Calculate compression ratio."
-    # print("Original size: ", os.path.getsize(originalFile))
-    # print("CompressedSize", os.path.getsize(compressedFile))
+    print("Original size: ", os.path.getsize(original_file_path))
+    print("CompressedSize", os.path.getsize(compressed_file_path))
     return os.path.getsize(compressed_file_path) / os.path.getsize(original_file_path)
 
 

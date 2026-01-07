@@ -203,13 +203,6 @@ class TestSHRINK(unittest.TestCase):
         original_values = [val.value for val in original_data]
         plt.plot(original_timestamps, original_values, marker=".", color="black")  # type: ignore
 
-        # if self.ts_decompressed is None:
-        #     return None
-        # shrink_timestamps = [val.timestamp for val in self.ts_decompressed]
-        # shrink_values = [val.value for val in self.ts_decompressed]
-        # plt.figure()
-        # plt.plot(shrink_timestamps, shrink_values, marker=".", color="black")
-
         for segment_list in segment_results:
             timestamps = [val.init_timestamp for val in segment_list]
             values = [val.get_b for val in segment_list]
@@ -222,47 +215,31 @@ class TestSHRINK(unittest.TestCase):
                 markersize=12,
             )
         plt.legend(  # type: ignore
-            ["Original data", "Base epsilon=0.01", "Base epsilon=0.5"], loc="upper left"
+            ["Original data",
+             "Base epsilon=0.01",
+             "Base epsilon=0.05",
+             "Base epsilon=0.1",
+             "Base epsilon=0.2"],
+            loc="upper left"
         )
         plt.show()  # type: ignore
 
 
 if __name__ == "__main__":
     files = [
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-        "/BIDMC32_dim PLETH.csv",
-    ]  # , "MoteStrain.csv", "Lightning.csv", "Cricket.csv"]
+        "/BeijingPM10Quality_TEST_dim0.csv",
+        "/BeijingPM10Quality_TEST_dim0.csv",
+        "/BeijingPM10Quality_TEST_dim0.csv",
+        "/BeijingPM10Quality_TEST_dim0.csv",
+    ]  
     in_base_epsilons = [
         0.01,
         0.05,
         0.1,
         0.2,
-        0.4,
-        0.5,
-        0.8,
-        1.0,
-        1.2,
-        1.5,
-        2.
-    ]  # [0.525],          0.85,             1.235,           1.14]
+    ] 
     in_epsilons = [
         0.01,
-        0.05,
-        0.1,
-        0.2,
-        0.5,
-        1.0,
-        2.0,
     ]  # [0.01, 0.0075], 0.005, 0.0025, 0.001, 0.00075, 0.0001, 0]
     test = TestSHRINK()
     originaldata, test_results = test.run_shrink_test(

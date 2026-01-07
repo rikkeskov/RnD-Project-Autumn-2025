@@ -26,7 +26,7 @@ class TimeSeriesReader:
                         value = float(row[1])
                     except ValueError as e:
                         print(f"Error: {e} for row ID {timestamp} with value {row[1]}")
-                        value = 0
+                        continue
                     points.append(Point(timestamp, value))
                     max_val = max(max_val, value)
                     min_val = min(min_val, value)
