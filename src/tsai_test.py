@@ -3,9 +3,10 @@
 import sys
 import os
 import logging
-import numpy as np
+import numpy as np  # type: ignore
+import matplotlib.pyplot as plt
 import pandas as pd
-from tsai.all import Path, SlidingWindow, test_eq  # type: ignore
+from tsai.all import *  # type: ignore
 
 logging.basicConfig(
     level=logging.INFO,
@@ -22,49 +23,46 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from shrink.constants import DATA_PATH
 
 full_tgt_dir = "./data/tsai"
+STRIDE = None
+HORIZON = 1
 
-def generate_tsai_data(window_length: int, target_dir: str, file: str, generate_split: bool = False) -> None:
+def generate_tsai_data(window_length: int, target_dir: str, train_file: str, test_file: str, generate_split: bool = False) -> None:
     # load as pandas df
-    df = pd.read_csv(DATA_PATH + file, sep=",", header=None, index_col=0) # type: ignore
-    print(df.head())
-    logging.info(f"Dataset name: {file}. Dataset shape: {df.shape}.")
+    df_train = pd.read_csv(DATA_PATH + train_file, sep=",", header=None, index_col=0) # type: ignore
+    # df_train.fillna(df_train.median()) # type: ignore
+    df_test = pd.read_csv(DATA_PATH + test_file, sep=",", header=None, index_col=0) # type: ignore
+    # df_test.fillna(df_test.median()) # type: ignore
+    logging.info(f"Dataset name: {train_file}. Dataset shape: {df_train.shape}.")
     try:
-        X, y = SlidingWindow(window_length)(df)
+        X_train, y_train = SlidingWindow(window_length, horizon=HORIZON, stride=STRIDE)(df_train)
+        X_test, y_test = SlidingWindow(window_length, horizon=HORIZON, stride=STRIDE)(df_test)
     except Exception as e:
         logging.error(f"Could not generate X, y pair from Pandas dataframe: {e}")
+    X, y, splits = combine_split_data([X_train, X_test], [y_train, y_test])
+    # check_data(X, y, splits)
+    tfms  = [None, [TSRegression()]]
+    batch_tfms = TSStandardize(by_sample=True, by_var=True)
+    dls = get_ts_dls(X, y, splits=splits, tfms=tfms, batch_tfms=batch_tfms, bs=50)
+    learn: Learner = ts_learner(dls, InceptionTime, metrics=[mae, rmse], cbs=ShowGraph())
+    learn.lr_find()
+
+
+def tsai_test():
+    dsid = 'AppliancesEnergy' 
+    X, y, splits = get_regression_data(dsid, split_data=False)
     print(X.shape)
     print(y.shape)
-
-# def generate_tsai_model(tsai_data_folder: str) -> None:
-#     np.save(f'{full_tgt_dir}/X_train.npy', X_train)
-#     np.save(f'{full_tgt_dir}/y_train.npy', y_train)
-#     np.save(f'{full_tgt_dir}/X_valid.npy', X_valid)
-#     np.save(f'{full_tgt_dir}/y_valid.npy', y_valid)
-#     np.save(f'{full_tgt_dir}/X.npy', concat(X_train, X_valid))
-#     np.save(f'{full_tgt_dir}/y.npy', concat(y_train, y_valid))
-#     PATH = Path('./models/Regression.pkl')
-
-#     X, y, splits = get_regression_data(DSID, split_data=False)
-#     print(X.shape, y.shape)
-#     check_data(X,y,splits, False)
-#     new_X = np.reshape(X[0][1], -1)
-
-#     tfms  = [None, [TSRegression()]]
-#     batch_tfms = TSStandardize(by_sample=True, by_var=True)
-#     dls = get_ts_dls(X, y, splits=splits, tfms=tfms, batch_tfms=batch_tfms, bs=128)
-#     learn = ts_learner(dls, InceptionTime, metrics=[mae, rmse])
-#     learn.fit_one_cycle(50, 1e-2)
-
-#     PATH.parent.mkdir(parents=True, exist_ok=True)
-#     learn.export(PATH)
-#     learn = load_learner(PATH, cpu=False)
-#     raw_preds, target, preds = learn.get_X_preds(X[splits[1]])
-#     np.save('test.npy', preds)
-#     print('predictions saved, preds.shape')
-
-#     print(raw_preds)
-#     print(target)
-#     print(preds)
+    print(y[:10])
+    # check_data(X, y, splits)
+    tfms  = [None, [TSRegression()]]
+    batch_tfms = TSStandardize(by_sample=True, by_var=True)
+    dls = get_ts_dls(X, y, splits=splits, tfms=tfms, batch_tfms=batch_tfms, bs=128)
+    dls.one_batch()
+    print(f"dls.c {dls.c}")
+    print(dls.show_batch())
+    learn = ts_learner(dls, InceptionTime, metrics=[mae, rmse], cbs=ShowGraph())
+    learn.lr_find()
 
 if __name__ == "__main__":
-    generate_tsai_data(10, full_tgt_dir, "/HouseholdPowerConsumption1_TRAIN_dim0.csv", True)
+    #generate_tsai_data(100, full_tgt_dir, "/HouseholdPowerConsumption1_TRAIN_dim0.csv", "/HouseholdPowerConsumption1_TEST_dim0.csv", True)
+    tsai_test()
