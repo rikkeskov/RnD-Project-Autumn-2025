@@ -2,4 +2,11 @@ virtualenv
 .mypy_cache
 __pycache__/
 .vscode/
-src/data
+src/data/downloaded
+src/data/covid3month
+src/data/obsolete
+src/data/compressed
+src/data/from_csv
+src/data/Monash
+src/data/quantrc
+src/__pycache__
