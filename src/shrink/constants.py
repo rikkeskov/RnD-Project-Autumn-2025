@@ -4,6 +4,7 @@ Path constants for Shrink package.
 
 DATA_PATH = f"./data"
 
+DECOMPRESSED_FOLDER = DATA_PATH + "/decompressed"
 
 RESIDUALS_FOLDER = DATA_PATH + "/compressed/residuals"
 BASE_FOLDER = DATA_PATH + "/compressed/base"

@@ -7,6 +7,7 @@ import sys
 import unittest
 from typing import List
 
+import pandas as pd
 import matplotlib.pyplot as plt
 
 # Ensure project root is on sys.path so absolute imports work when running this module as a script
@@ -17,6 +18,7 @@ from shrink.constants import (
     BASE_FOLDER,
     DATA_PATH,
     TURBO_RANGE_CODER_CODES_BASE_PATH,
+    DECOMPRESSED_FOLDER
 )
 from shrink.shrink import Shrink
 from shrink.time_series_reader import TimeSeriesReader
@@ -105,13 +107,13 @@ class TestSHRINK(unittest.TestCase):
             shrink: Shrink = Shrink(points=ts.data, epsilon=base_epsilon)
 
             shrink_segments = shrink.segments
-            shrink_segments.sort(
-                key=lambda segment: (
-                    segment.init_timestamp,
-                    segment.get_b,
-                    segment.get_a,
-                )
-            )
+            # shrink_segments.sort(
+            #     key=lambda segment: (
+            #         segment.init_timestamp,
+            #         segment.get_b,
+            #         segment.get_a,
+            #     )
+            # )
             results.append(shrink_segments)
             binary = shrink.to_byte_array(variable_byte=False, zstd=False)
             original_base_size = shrink.save_bytes(binary, filename)
@@ -198,51 +200,95 @@ class TestSHRINK(unittest.TestCase):
         self, original_data: list[Point], segment_results: list[list[ShrinkSegment]]
     ) -> None:
         """Plot the decompressed values."""
+        segments: list[ShrinkSegment] = segment_results[0]
 
         original_timestamps = [val.timestamp for val in original_data]
         original_values = [val.value for val in original_data]
-        plt.plot(original_timestamps, original_values, marker=".", color="black")  # type: ignore
+        #plt.plot(original_timestamps, original_values, marker=".", color="black")  # type: ignore
 
-        for segment_list in segment_results:
-            timestamps = [val.init_timestamp for val in segment_list]
-            values = [val.get_b for val in segment_list]
-            plt.plot(  # type: ignore
-                timestamps,
-                values,
-                linestyle="--",
-                marker="+",
-                label="Segment",
-                markersize=12,
-            )
-        plt.legend(  # type: ignore
-            ["Original data",
-             "Base epsilon=0.01",
-             "Base epsilon=0.05",
-             "Base epsilon=0.1",
-             "Base epsilon=0.2"],
-            loc="upper left"
-        )
-        plt.show()  # type: ignore
+        # Prepare data for CSV
+        linear_approximated_data: list[dict[str, int | float]] = []
+
+        # Plot the linear approximated values
+        for i in range(len(segments) - 1):
+            init_timestamp = segments[i].init_timestamp
+            a = segments[i].get_a
+            b = segments[i].get_b
+            next_init_timestamp = segments[i + 1].init_timestamp
+
+            # Generate timestamps and values for the current segment
+            timestamps = list(range(init_timestamp, next_init_timestamp))
+            values = [a * (t - init_timestamp) + b for t in timestamps]
+
+            # Plot the segment
+            #plt.plot(timestamps, values, linestyle="--", marker="+", markersize=12, label=f"Segment {i}")  # type: ignore
+            
+            # Save data for CSV
+            for t, v in zip(timestamps, values):
+                linear_approximated_data.append({
+                    "segment_index": i,
+                    "timestamp": t,
+                    "value": v
+                })
+        # Handle the last segment
+        init_timestamp = segments[-1].init_timestamp
+        a = segments[-1].get_a
+        b = segments[-1].get_b
+        timestamps = list(range(init_timestamp, original_timestamps[-1] + 1))  # +1 because range is exclusive
+        values = [a * (t - init_timestamp) + b for t in timestamps]
+
+        # Plot the last segment
+        #plt.plot(timestamps, values, linestyle="--", marker="+", markersize=12, label=f"Segment {len(segments) - 1}")  # type: ignore
+
+        # Save data for CSV for the last segment
+        for t, v in zip(timestamps, values):
+            linear_approximated_data.append({
+                "segment_index": len(segments) - 1,
+                "timestamp": t,
+                "value": v
+            })
+
+        #plt.legend(loc="upper left")
+        #plt.xlabel("Timestamp")
+        #plt.ylabel("Value")
+        #plt.title("Linear Approximated Segments")
+        #plt.show()
+
+        # Save to CSV
+        df = pd.DataFrame(linear_approximated_data)
+        df.to_csv(DECOMPRESSED_FOLDER + "/linear_approximated_output.csv", index=False)
+    
+
+def root_mean_squared_error_plot(test_file: str, approx_test_file: str):
+    df_test = pd.read_csv(test_file, sep=",", header=None, index_col=0) # type: ignore
+    print(df_test.head())
+
+    df_approx_test = pd.read_csv(approx_test_file, sep=",", skiprows=[0], header=None, usecols=[1, 2], index_col=0) # type: ignore
+    print(df_approx_test.head())
+    plt.plot(df_test, marker=".", color="black")  # type: ignore
+    plt.plot(df_approx_test, marker=".", color="red")  # type: ignore
+    plt.legend(loc="upper left")
+    plt.xlabel("Timestamp")
+    plt.ylabel("Value")
+    plt.title("Linear Approximated Segments")
+    plt.show()
 
 
 if __name__ == "__main__":
     files = [
-        "/BeijingPM10Quality_TEST_dim0.csv",
-        "/BeijingPM10Quality_TEST_dim0.csv",
-        "/BeijingPM10Quality_TEST_dim0.csv",
-        "/BeijingPM10Quality_TEST_dim0.csv",
+        "/HouseholdPowerConsumption1_TEST_dim0.csv",
     ]  
     in_base_epsilons = [
-        0.01,
-        0.05,
-        0.1,
-        0.2,
+        1.0
     ] 
     in_epsilons = [
-        0.01,
-    ]  # [0.01, 0.0075], 0.005, 0.0025, 0.001, 0.00075, 0.0001, 0]
+        0.5
+    ]
     test = TestSHRINK()
     originaldata, test_results = test.run_shrink_test(
         files, in_epsilons, in_base_epsilons
     )
     test.plot_shrink_decompressed(originaldata, test_results)
+    root_mean_squared_error_plot(
+        DATA_PATH + "/HouseholdPowerConsumption1_TEST_dim0.csv",
+        DATA_PATH + "/decompressed/linear_approximated_output.csv")

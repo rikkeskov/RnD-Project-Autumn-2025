@@ -66,6 +66,7 @@ class Shrink:
 
         """
         if points is not None:  # Handle the case where points is a list of Points
+            self.points = points
             start_time = time.time()
 
             if not points:
@@ -98,6 +99,9 @@ class Shrink:
 
         for i in range(len(self.segments) - 1):
             while current_timestamp < self.segments[i + 1].get_init_timestamp:
+                if idx >= len(self.values) or self.points[idx].timestamp != current_timestamp:
+                    current_timestamp += 1
+                    continue
                 expected_value = high_precision_add(
                     self.segments[i].get_a
                     * (current_timestamp - self.segments[i].get_init_timestamp),
