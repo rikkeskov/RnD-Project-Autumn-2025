@@ -9,4 +9,5 @@ src/data/compressed
 src/data/from_csv
 src/data/Monash
 src/data/quantrc
+src/data/decompressed
 src/__pycache__
