@@ -2,13 +2,13 @@
 Test module for Shrink Python implementation.
 """
 
+import csv
 import os
 import sys
 import unittest
-from typing import List
 
-import pandas as pd
-import matplotlib.pyplot as plt
+import pandas as pd # type: ignore
+from typing import List
 
 # Ensure project root is on sys.path so absolute imports work when running this module as a script
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -17,8 +17,7 @@ from quan_trc import compress
 from shrink.constants import (
     BASE_FOLDER,
     DATA_PATH,
-    TURBO_RANGE_CODER_CODES_BASE_PATH,
-    DECOMPRESSED_FOLDER
+    TURBO_RANGE_CODER_CODES_BASE_PATH
 )
 from shrink.shrink import Shrink
 from shrink.time_series_reader import TimeSeriesReader
@@ -82,7 +81,7 @@ class TestSHRINK(unittest.TestCase):
         self.assertEqual(idx, len(ts.data))
 
     def run_shrink_test(
-        self, filenames: List[str], epsilons: list[float], base_epsilons: list[float]
+        self, filenames: List[str], epsilons: list[float], base_epsilons: list[float], save: bool
     ) -> tuple[list[Point], list[list[ShrinkSegment]]]:
         """
         The entrance function to extact base and residuals for datasets
@@ -90,6 +89,16 @@ class TestSHRINK(unittest.TestCase):
             - filenames: list of the files
             - epsilons: list of the desired epsilon for compression
         """
+        if save:
+            with open("data/shrink_results_overviews/"+filenames[0][1:].split(".")[0]+"_results.csv", "w", newline="") as csvfile:
+                writer = csv.writer(csvfile, delimiter=",")
+                writer.writerow(["filename",
+                                    "epsilon_pct",
+                                    "base_epsilon",
+                                    "compression_ratio",
+                                    "compression_time",
+                                    "decompression_time"
+                                    ])
         results: list[list[ShrinkSegment]] = []
         ts: TimeSeries = TimeSeries(data=[], data_range=0.0)
 
@@ -180,11 +189,30 @@ class TestSHRINK(unittest.TestCase):
                     + f"{self.decompression_results_time} = "
                     + f"{self.decompression_base_time +self.decompression_results_time}ms"
                 )
+                if save:
+                    with open("data/shrink_results_overviews/"+filenames[0][1:].split(".")[0]+"_results.csv", "a", newline="") as csvfile:
+                        writer = csv.writer(csvfile, delimiter=",")
+                        writer.writerow([filename,
+                                        epsilon_pct,
+                                        base_epsilon,
+                                        compression_ratio,
+                                        base_time + residual_time,
+                                        self.decompression_base_time +self.decompression_results_time
+                                        ])
 
                 mean_compression_ratio += compression_ratio
                 mean_result_compression_ratio += residual_compression_ratio
                 mean_compression_time += residual_time
                 mean_decoding_time += self.decompression_results_time
+
+                # Save decompressed data
+                for segment_list in results:
+                    timestamps = [val.init_timestamp for val in segment_list]
+                    values = [val.get_b for val in segment_list]
+                    with open("data/decompressed/"+filename.split(".")[0]+"_e"+str(epsilon_pct)+"_eb"+str(base_epsilon)+"_decompressed.csv", "w", newline="") as csvfile:
+                        writer = csv.writer(csvfile, delimiter=",")
+                        for t, v in zip(timestamps, values):
+                            writer.writerow([t, v])
 
             mean_compression_time, mean_decoding_time = mean_compression_time / len(
                 epsilons
@@ -196,99 +224,91 @@ class TestSHRINK(unittest.TestCase):
             print(f"The average compresstime: {mean_compression_time:.1f}ms \n")
         return ts.data, results
 
-    def plot_shrink_decompressed(
-        self, original_data: list[Point], segment_results: list[list[ShrinkSegment]]
-    ) -> None:
-        """Plot the decompressed values."""
-        segments: list[ShrinkSegment] = segment_results[0]
+def calc_epsilon_base(file_path: str, percentages: list[float]) -> list[float]:
+    """
+    Calculate the base error threshold (epsilon_b) as a fraction of the data range from a CSV file.
 
-        original_timestamps = [val.timestamp for val in original_data]
-        original_values = [val.value for val in original_data]
-        #plt.plot(original_timestamps, original_values, marker=".", color="black")  # type: ignore
+    Parameters:
+    - file_path: Path to the CSV file containing the data.
+    - percentage: The fraction of the data range to use for epsilon_b (e.g., 5 for 5%).
 
-        # Prepare data for CSV
-        linear_approximated_data: list[dict[str, int | float]] = []
-
-        # Plot the linear approximated values
-        for i in range(len(segments) - 1):
-            init_timestamp = segments[i].init_timestamp
-            a = segments[i].get_a
-            b = segments[i].get_b
-            next_init_timestamp = segments[i + 1].init_timestamp
-
-            # Generate timestamps and values for the current segment
-            timestamps = list(range(init_timestamp, next_init_timestamp))
-            values = [a * (t - init_timestamp) + b for t in timestamps]
-
-            # Plot the segment
-            #plt.plot(timestamps, values, linestyle="--", marker="+", markersize=12, label=f"Segment {i}")  # type: ignore
-            
-            # Save data for CSV
-            for t, v in zip(timestamps, values):
-                linear_approximated_data.append({
-                    "segment_index": i,
-                    "timestamp": t,
-                    "value": v
-                })
-        # Handle the last segment
-        init_timestamp = segments[-1].init_timestamp
-        a = segments[-1].get_a
-        b = segments[-1].get_b
-        timestamps = list(range(init_timestamp, original_timestamps[-1] + 1))  # +1 because range is exclusive
-        values = [a * (t - init_timestamp) + b for t in timestamps]
-
-        # Plot the last segment
-        #plt.plot(timestamps, values, linestyle="--", marker="+", markersize=12, label=f"Segment {len(segments) - 1}")  # type: ignore
-
-        # Save data for CSV for the last segment
-        for t, v in zip(timestamps, values):
-            linear_approximated_data.append({
-                "segment_index": len(segments) - 1,
-                "timestamp": t,
-                "value": v
-            })
-
-        #plt.legend(loc="upper left")
-        #plt.xlabel("Timestamp")
-        #plt.ylabel("Value")
-        #plt.title("Linear Approximated Segments")
-        #plt.show()
-
-        # Save to CSV
-        df = pd.DataFrame(linear_approximated_data)
-        df.to_csv(DECOMPRESSED_FOLDER + "/linear_approximated_output.csv", index=False)
+    Returns:
+    - epsilon_b: The calculated base error threshold.
+    """
+    values: list[float] = []
+    try:
+        with open(file_path, "r", newline="", encoding="utf-8") as file:
+            reader = csv.reader(file)
+            for row in reader:
+                try:
+                    value = float(row[1])
+                except ValueError as e:
+                    continue
+                values.append(value)
+    except OSError as e:
+        print(e)
+        raise OSError("See print.") from e
     
+    # Calculate the data range
+    data_range = max(values) - min(values)
 
-def root_mean_squared_error_plot(test_file: str, approx_test_file: str):
-    df_test = pd.read_csv(test_file, sep=",", header=None, index_col=0) # type: ignore
-    print(df_test.head())
+    # Calculate epsilon_b
+    epsilon_b: list[float] = []
+    for pct in percentages:
+        epsilon_b.append(round(pct * data_range, 4))
+    return epsilon_b
 
-    df_approx_test = pd.read_csv(approx_test_file, sep=",", skiprows=[0], header=None, usecols=[1, 2], index_col=0) # type: ignore
-    print(df_approx_test.head())
-    plt.plot(df_test, marker=".", color="black")  # type: ignore
-    plt.plot(df_approx_test, marker=".", color="red")  # type: ignore
-    plt.legend(loc="upper left")
-    plt.xlabel("Timestamp")
-    plt.ylabel("Value")
-    plt.title("Linear Approximated Segments")
-    plt.show()
+def count_decimal_places(file_path: str) -> int:
+    # Load the CSV file
+    df = pd.read_csv(file_path, header=None, names=['timestamp', 'value']) # type: ignore
+
+    # Convert 'value' column to string to count decimal places
+    df['value'] = df['value'].astype(str) # type: ignore
+
+    # Function to count decimal places
+    def decimal_places(value: str):
+        if '.' in value:
+            return len(value.split('.')[1].rstrip('0'))
+        else:
+            return 0
+
+    # Apply the function to each value
+    df['decimal_places'] = df['value'].apply(decimal_places) # type: ignore
+
+    # Count the maximum number of decimal places
+    max_decimal_places = df['decimal_places'].max()
+
+    return max_decimal_places
+
+def process_directory(directory_path: str):
+    # Iterate over all files in the directory
+    for filename in os.listdir(directory_path):
+        if filename.endswith('.csv'):
+            file_path = os.path.join(directory_path, filename)
+            max_decimal_places = count_decimal_places(file_path)
+            print(f"File: {filename}, Maximum number of decimal places: {max_decimal_places}")
 
 
 if __name__ == "__main__":
     files = [
-        "/HouseholdPowerConsumption1_TEST_dim0.csv",
-    ]  
-    in_base_epsilons = [
-        1.0
-    ] 
-    in_epsilons = [
-        0.5
+        "/BIDMC32_TEST_dim_AVR.csv",
     ]
-    test = TestSHRINK()
-    originaldata, test_results = test.run_shrink_test(
-        files, in_epsilons, in_base_epsilons
-    )
-    test.plot_shrink_decompressed(originaldata, test_results)
-    root_mean_squared_error_plot(
-        DATA_PATH + "/HouseholdPowerConsumption1_TEST_dim0.csv",
-        DATA_PATH + "/decompressed/linear_approximated_output.csv")
+    base_percentages = [0.01, 0.02, 0.05, 0.075, 0.1, 0.15]
+    num_files = len(base_percentages)
+
+    for filename in files:
+        files = [filename]   * num_files
+        in_base_epsilons = calc_epsilon_base("data" + filename, base_percentages)
+
+        num_decimals = count_decimal_places("data/"+filename)
+        print(f"Number of decimals for file: {filename} is {num_decimals}.")
+        if num_decimals < 3:
+            in_epsilons = [0.01, 0.0075, 0.005, 0.0025, 0.001]
+        else:
+            in_epsilons = [0.01, 0.0075, 0.005, 0.0025, 0.001, 0.00075, 0.0005, 0.00025, 0.0001] # when decimal >= 3
+        print(f"Epsilons are therefore {in_epsilons}.")
+        test = TestSHRINK()
+        originaldata, test_results = test.run_shrink_test(
+            files, in_epsilons, in_base_epsilons, False
+        )
+        
