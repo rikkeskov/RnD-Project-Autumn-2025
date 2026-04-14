@@ -291,7 +291,7 @@ def process_directory(directory_path: str):
 
 if __name__ == "__main__":
     files = [
-        "/BIDMC32_TEST_dim_AVR.csv",
+        "/BeijingPM25Quality_TEST_dim0.csv",
     ]
     base_percentages = [0.01, 0.02, 0.05, 0.075, 0.1, 0.15]
     num_files = len(base_percentages)
@@ -311,4 +311,4 @@ if __name__ == "__main__":
         originaldata, test_results = test.run_shrink_test(
             files, in_epsilons, in_base_epsilons, False
         )
-        
+

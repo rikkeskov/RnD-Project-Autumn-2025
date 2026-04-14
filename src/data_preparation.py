@@ -702,7 +702,7 @@ def ts_to_pd_dataframe(
         if num_dimensions is None:
             raise ValueError("Number of dimensions should not be None at this point.")
         for dim in range(0, num_dimensions):
-            data["dim_" + str(dim)] = instance_list[dim]
+            data["dim_" + str(dim)] = instance_list[dim] # type:ignore
 
         # Check if we should return any associated class labels separately
 
@@ -728,14 +728,14 @@ def pd_dataframe_to_csv(
     print(base_filepath)
 
     for dim in range(data.shape[1]):  # Iterate over columns, not dimensions
-        col = data.iloc[:, dim]  # Select the dim-th column
+        col = data.iloc[:, dim]  # Select the dim-th column # type:ignore
         col_df: list[pd.DataFrame] = []
         for idx in col:
             col_df.append(pd.DataFrame(data=idx))
-        full_df: pd.DataFrame = pd.concat(col_df)
+        full_df: pd.DataFrame = pd.concat(col_df) # type:ignore
         full_df.index = pd.to_datetime(full_df.index, format="%Y-%m-%d %H:%M:%S")
         full_df = full_df.sort_index() # type: ignore
-        full_df.reset_index(drop=True).to_csv(
+        full_df.reset_index(drop=True).to_csv( # type:ignore
             f".{base_filepath}_dim{dim}.csv",
             index=True,
             header=False,
