@@ -17,8 +17,12 @@ import os
 
 from enum import Enum
 from sklearn.impute import KNNImputer
+from typing import Any
+
 import pandas as pd
 import numpy as np
+
+from tsai.all import *  # type: ignore
 
 # Ensure project root is on sys.path so absolute imports work when running this module as a script
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -84,6 +88,27 @@ def preprocessing_and_save_as_csv(filename: str, preprocessing_type: Preprocessi
     full_out_path: str = output_path + filename.split()[0] + f"_{preprocessing_type}.csv"
     pd_dataframe_to_csv(df, full_out_path)
     return full_out_path
+
+def generate_X_y(file: str, window_length: int, horizon: int, stride: int | None) -> tuple[Any]:
+    # load as pandas df
+    df = pd.read_csv(f"{DATA_PATH}{file}", sep=",", header=None, index_col=0) # type: ignore
+    print(f"Dataset name: {file}. Dataset shape: {df.shape}.")
+    try:
+        X, y = SlidingWindow(window_length, horizon=horizon, stride=stride)(df) # type: ignore
+    except Exception as e:
+        print(f"Could not generate X, y pair from Pandas dataframe: {e}")
+        exit()
+    print(f"X shape: {X.shape}, y shape: {y.shape} with first 10 values being: {y[:10]}") # type: ignore
+    return X, y # type: ignore
+
+def make_ts_splits(X: Any, valid_pct: float=0.2) -> tuple[list[int], list[int]]:
+    n = len(X)
+    cut = int(n * (1 - valid_pct))
+
+    train_idx = list(range(cut))
+    valid_idx = list(range(cut, n))
+
+    return train_idx, valid_idx
 
 if __name__ == "__main__":
     df_interp = fill_by_interpolation("/BeijingPM10Quality_TEST_dim0.csv")
