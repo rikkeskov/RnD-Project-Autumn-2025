@@ -10,4 +10,5 @@ src/data/from_csv
 src/data/Monash
 src/data/quantrc
 src/data/decompressed
+src/models
 src/__pycache__
