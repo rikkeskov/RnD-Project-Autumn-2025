@@ -28,7 +28,6 @@ from tsai.all import *  # type: ignore
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shrink.constants import DATA_PATH
-from data_preparation import pd_dataframe_to_csv
 
 class PreprocessingType(Enum):
     MEAN = 0
@@ -75,7 +74,7 @@ def fill_by_knn(filename: str, k: int = 5) -> pd.DataFrame:
     print("Return type after imputation is not pandas df.")
     return df
 
-def preprocessing_and_save_as_csv(filename: str, preprocessing_type: PreprocessingType, output_path: str = DATA_PATH + "/preprocessed", k: int = 5) -> str:
+def preprocessing_and_save_as_csv(filename: str, preprocessing_type: PreprocessingType, output_path: str = "data/preprocessed", k: int = 5) -> str:
     if preprocessing_type == PreprocessingType.MEAN:
         df = fill_by_mean(filename)
     elif preprocessing_type == PreprocessingType.INTERPOLATION:
@@ -85,8 +84,9 @@ def preprocessing_and_save_as_csv(filename: str, preprocessing_type: Preprocessi
     else:
         print(f"Could not understand preprocessing type. {filename} not preprocessed.")
         exit()
-    full_out_path: str = output_path + filename.split()[0] + f"_{preprocessing_type}.csv"
-    pd_dataframe_to_csv(df, full_out_path)
+    full_out_path: str = output_path + filename.split(".")[0] + f"_{preprocessing_type.name}.csv"
+    df.to_csv(full_out_path, header=False)
+    # pd_dataframe_to_csv(df, full_out_path)
     return full_out_path
 
 def generate_X_y(file: str, window_length: int, horizon: int, stride: int | None) -> tuple[Any]:

@@ -25,6 +25,10 @@ from shrink.time_series import TimeSeries
 from shrink.shrink_segment import ShrinkSegment
 from shrink.point import Point
 
+from data_preprocessing import missing_value_count, preprocessing_and_save_as_csv, PreprocessingType
+
+PREPROCESSING_TYPE = PreprocessingType.INTERPOLATION
+
 
 class TestSHRINK(unittest.TestCase):
     """
@@ -90,7 +94,7 @@ class TestSHRINK(unittest.TestCase):
             - epsilons: list of the desired epsilon for compression
         """
         if save:
-            with open("data/shrink_results_overviews/"+filenames[0][1:].split(".")[0]+"_results.csv", "w", newline="") as csvfile:
+            with open("data/shrink_results/"+filenames[0].split("/")[2].split(".")[0]+"_results.csv", "w", newline="") as csvfile:
                 writer = csv.writer(csvfile, delimiter=",")
                 writer.writerow(["filename",
                                     "epsilon_pct",
@@ -128,7 +132,7 @@ class TestSHRINK(unittest.TestCase):
             original_base_size = shrink.save_bytes(binary, filename)
 
             # 3. Entropy coding for Base
-            inpath = BASE_FOLDER + filename[:-7] + "_base.bin"
+            inpath = BASE_FOLDER + "/" + filename.split(".")[0].split("/")[2] + "_base.bin"
             compress(inpath, TURBO_RANGE_CODER_CODES_BASE_PATH)
             base_time = int(shrink.base_time)
             base_size = os.path.getsize(TURBO_RANGE_CODER_CODES_BASE_PATH)
@@ -190,7 +194,7 @@ class TestSHRINK(unittest.TestCase):
                     + f"{self.decompression_base_time +self.decompression_results_time}ms"
                 )
                 if save:
-                    with open("data/shrink_results_overviews/"+filenames[0][1:].split(".")[0]+"_results.csv", "a", newline="") as csvfile:
+                    with open("data/shrink_results/"+filenames[0].split("/")[2].split(".")[0]+"_results.csv", "a", newline="") as csvfile:
                         writer = csv.writer(csvfile, delimiter=",")
                         writer.writerow([filename,
                                         epsilon_pct,
@@ -209,7 +213,7 @@ class TestSHRINK(unittest.TestCase):
                 for segment_list in results:
                     timestamps = [val.init_timestamp for val in segment_list]
                     values = [val.get_b for val in segment_list]
-                    with open("data/decompressed/"+filename.split(".")[0]+"_e"+str(epsilon_pct)+"_eb"+str(base_epsilon)+"_decompressed.csv", "w", newline="") as csvfile:
+                    with open("data/decompressed/"+filename.split("/")[2].split(".")[0]+"_e"+str(epsilon_pct)+"_eb"+str(base_epsilon)+"_decompressed.csv", "w", newline="") as csvfile:
                         writer = csv.writer(csvfile, delimiter=",")
                         for t, v in zip(timestamps, values):
                             writer.writerow([t, v])
@@ -291,16 +295,25 @@ def process_directory(directory_path: str):
 
 if __name__ == "__main__":
     files = [
-        "/BeijingPM25Quality_TEST_dim0.csv",
+        "/HouseholdPowerConsumption1_TEST_dim1.csv",
     ]
     base_percentages = [0.01, 0.02, 0.05, 0.075, 0.1, 0.15]
     num_files = len(base_percentages)
 
     for filename in files:
-        files = [filename]   * num_files
-        in_base_epsilons = calc_epsilon_base("data" + filename, base_percentages)
+        train_df: pd.DataFrame = pd.read_csv("data" + filename, sep=",", header=None, index_col=0)
+        nan_count: int = missing_value_count(train_df)
+        if nan_count > 0:
+            filename = preprocessing_and_save_as_csv(filename, PREPROCESSING_TYPE)
+            train_df: pd.DataFrame = pd.read_csv(filename, sep=",", header=None, index_col=0)
+        nan_count: int = missing_value_count(train_df)
+        if nan_count > 0:
+            print("Error in preprocessing.")
+            exit()
+        files = [filename[4:]]   * num_files
+        in_base_epsilons = calc_epsilon_base(filename, base_percentages)
 
-        num_decimals = count_decimal_places("data/"+filename)
+        num_decimals = count_decimal_places(filename)
         print(f"Number of decimals for file: {filename} is {num_decimals}.")
         if num_decimals < 3:
             in_epsilons = [0.01, 0.0075, 0.005, 0.0025, 0.001]
@@ -309,6 +322,6 @@ if __name__ == "__main__":
         print(f"Epsilons are therefore {in_epsilons}.")
         test = TestSHRINK()
         originaldata, test_results = test.run_shrink_test(
-            files, in_epsilons, in_base_epsilons, False
+            files, in_epsilons, in_base_epsilons, True
         )
 
