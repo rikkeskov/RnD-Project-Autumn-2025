@@ -87,7 +87,7 @@ def preprocessing_and_save_as_csv(filename: str, preprocessing_type: Preprocessi
     full_out_path: str = output_path + filename.split(".")[0] + f"_{preprocessing_type.name}.csv"
     df.to_csv(full_out_path, header=False)
     # pd_dataframe_to_csv(df, full_out_path)
-    return full_out_path
+    return full_out_path[4:]
 
 def generate_X_y(file: str, window_length: int, horizon: int, stride: int | None) -> tuple[Any]:
     # load as pandas df

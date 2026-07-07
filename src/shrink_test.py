@@ -295,7 +295,7 @@ def process_directory(directory_path: str):
 
 if __name__ == "__main__":
     files = [
-        "/HouseholdPowerConsumption1_TEST_dim1.csv",
+        "/BeijingPM10Quality_TEST_dim0.csv",
     ]
     base_percentages = [0.01, 0.02, 0.05, 0.075, 0.1, 0.15]
     num_files = len(base_percentages)
