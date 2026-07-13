@@ -1,11 +1,11 @@
 import pandas as pd
 import numpy as np
 
-file1 = "BIDMC32_TEST_dimAVR_e0.0001_eb0.03125_decompressed.csv"
-file2 = "BIDMC32_TEST_dimAVR_e0.03_eb0.03125_decompressed.csv"
+file1 = "data/decompressed/BIDMC32_TEST_dimAVR_e0_eb0.00390625_decompressed.csv"
+file2 = "data/decompressed/BIDMC32_TEST_dimAVR_e0_eb0.0625_decompressed.csv"
 
-df1 = pd.read_csv("data/decompressed/" + file1, header=None)
-df2 = pd.read_csv("data/decompressed/" + file2, header=None)
+df1 = pd.read_csv(file1, header=None)
+df2 = pd.read_csv(file2, header=None)
 
 print("Same shape:")
 print(df1.shape, df2.shape)

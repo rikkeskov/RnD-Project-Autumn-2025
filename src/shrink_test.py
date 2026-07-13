@@ -17,14 +17,11 @@ sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from quan_trc import compress
 from shrink.constants import (
     BASE_FOLDER,
-    DATA_PATH,
     TURBO_RANGE_CODER_CODES_BASE_PATH
 )
 from shrink.shrink import Shrink
 from shrink.time_series_reader import TimeSeriesReader
 from shrink.time_series import TimeSeries
-from shrink.shrink_segment import ShrinkSegment
-from shrink.point import Point
 
 
 class TestSHRINK(unittest.TestCase):
@@ -83,7 +80,7 @@ class TestSHRINK(unittest.TestCase):
 
     def run_shrink_test(
         self, filenames: List[str], epsilons: list[float], base_epsilons: list[float], save: bool
-    ) -> tuple[list[Point], list[list[ShrinkSegment]]]:
+    ) -> None:
         """
         The entrance function to extact base and residuals for datasets
         Parameters:
@@ -100,7 +97,6 @@ class TestSHRINK(unittest.TestCase):
                                     "compression_time",
                                     "decompression_time"
                                     ])
-        results: list[list[ShrinkSegment]] = []
         ts: TimeSeries = TimeSeries(data=[], data_range=0.0)
 
         for i, filename in enumerate(filenames):
@@ -110,21 +106,12 @@ class TestSHRINK(unittest.TestCase):
             print(f"Shrink: BaseEpsilon = {base_epsilon}")
 
             # 1. Read dataset
-            ts = TimeSeriesReader.get_time_series(DATA_PATH + "/" + filename)
+            ts = TimeSeriesReader.get_time_series(filename)
             print(f"{filename}: {ts.size/1024/1024:.2f}MB")
 
             # 2. Extract Base
             shrink: Shrink = Shrink(points=ts.data, epsilon=base_epsilon)
 
-            shrink_segments = shrink.segments
-            # shrink_segments.sort(
-            #     key=lambda segment: (
-            #         segment.init_timestamp,
-            #         segment.get_b,
-            #         segment.get_a,
-            #     )
-            # )
-            results.append(shrink_segments)
             binary = shrink.to_byte_array(variable_byte=False, zstd=False)
             original_base_size = shrink.save_bytes(binary, filename)
 
@@ -207,13 +194,13 @@ class TestSHRINK(unittest.TestCase):
                 mean_decoding_time += self.decompression_results_time
 
                 # Save decompressed data
-                for segment_list in results:
-                    timestamps = [val.init_timestamp for val in segment_list]
-                    values = [val.get_b for val in segment_list]
-                    with open("data/decompressed/"+filename.split("/")[1].split(".")[0]+"_e"+str(epsilon_pct)+"_eb"+str(base_epsilon)+"_decompressed.csv", "w", newline="") as csvfile:
-                        writer = csv.writer(csvfile, delimiter=",")
-                        for t, v in zip(timestamps, values):
-                            writer.writerow([t, v])
+                assert self.ts_decompressed is not None
+                timestamps = [point.timestamp for point in self.ts_decompressed]
+                values = [point.value for point in self.ts_decompressed]
+                with open("data/decompressed/"+filename.split("/")[1].split(".")[0]+"_e"+str(epsilon_pct)+"_eb"+str(base_epsilon)+"_decompressed.csv", "w", newline="") as csvfile:
+                    writer = csv.writer(csvfile, delimiter=",")
+                    for t, v in zip(timestamps, values):
+                        writer.writerow([t, v])
 
             mean_compression_time, mean_decoding_time = mean_compression_time / len(
                 epsilons
@@ -223,7 +210,7 @@ class TestSHRINK(unittest.TestCase):
                 mean_result_compression_ratio / len(epsilons),
             )
             print(f"The average compresstime: {mean_compression_time:.1f}ms \n")
-        return ts.data, results
+        return
 
 
 class BaseEpsilonCalculation():

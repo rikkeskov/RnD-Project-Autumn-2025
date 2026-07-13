@@ -2,7 +2,10 @@
 Module for data class Point.
 """
 
+from dataclasses import dataclass
 
+
+@dataclass
 class Point:
     """
     Data class. Point in each time series.

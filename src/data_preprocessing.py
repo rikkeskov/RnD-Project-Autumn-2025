@@ -91,7 +91,7 @@ def preprocessing_and_save_as_csv(filename: str, preprocessing_type: Preprocessi
 
 def generate_X_y(file: str, window_length: int, horizon: int, stride: int | None) -> tuple[Any]:
     # load as pandas df
-    df = pd.read_csv(f"{DATA_PATH}{file}", sep=",", header=None, index_col=0) # type: ignore
+    df = pd.read_csv(f"{file}", sep=",", header=None, index_col=0) # type: ignore
     print(f"Dataset name: {file}. Dataset shape: {df.shape}.")
     try:
         X, y = SlidingWindow(window_length, horizon=horizon, stride=stride)(df) # type: ignore
@@ -110,13 +110,14 @@ def make_ts_splits(X: Any, valid_pct: float=0.2) -> tuple[list[int], list[int]]:
 
     return train_idx, valid_idx
 
-if __name__ == "__main__":
-    df_interp = fill_by_interpolation("/BeijingPM10Quality_TEST_dim0.csv")
-    print(df_interp.iloc[121043]) # type: ignore
-    missing_value_count(df_interp)
-    df_mean = fill_by_mean("/BeijingPM10Quality_TEST_dim0.csv")
-    print(df_mean.iloc[121043]) # type: ignore
-    missing_value_count(df_mean)
-    df_knn = fill_by_knn("/BeijingPM10Quality_TEST_dim0.csv")
-    print(df_knn.iloc[121043]) # type: ignore
-    missing_value_count(df_knn)
+def preprocessing(path: str, preprocessing_type: PreprocessingType) -> pd.DataFrame:
+    df: pd.DataFrame = pd.read_csv(path, sep=",", header=None, index_col=0)
+    nan_count: int = missing_value_count(df)
+    if nan_count > 0:
+        path = preprocessing_and_save_as_csv(path, preprocessing_type)
+        df: pd.DataFrame = pd.read_csv(path, sep=",", header=None, index_col=0)
+    nan_count: int = missing_value_count(df)
+    if nan_count > 0:
+        print("Error in preprocessing.")
+        exit()
+    return df
