@@ -1,0 +1,2 @@
+filename,epsilon_pct,base_epsilon,compression_ratio,compression_time,decompression_time
+/BIDMC32_TEST_dimAVR.csv,0.03115,0.03125,18.442434210526315,877,117

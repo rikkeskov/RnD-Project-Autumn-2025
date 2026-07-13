@@ -7,6 +7,7 @@ import os
 import sys
 import unittest
 
+import numpy as np
 import pandas as pd # type: ignore
 from typing import List
 
@@ -24,10 +25,6 @@ from shrink.time_series_reader import TimeSeriesReader
 from shrink.time_series import TimeSeries
 from shrink.shrink_segment import ShrinkSegment
 from shrink.point import Point
-
-from data_preprocessing import missing_value_count, preprocessing_and_save_as_csv, PreprocessingType
-
-PREPROCESSING_TYPE = PreprocessingType.INTERPOLATION
 
 
 class TestSHRINK(unittest.TestCase):
@@ -94,7 +91,7 @@ class TestSHRINK(unittest.TestCase):
             - epsilons: list of the desired epsilon for compression
         """
         if save:
-            with open("data/shrink_results/"+filenames[0].split("/")[2].split(".")[0]+"_results.csv", "w", newline="") as csvfile:
+            with open("data/shrink_results/"+filenames[0].split("/")[1].split(".")[0]+"_results.csv", "w", newline="") as csvfile:
                 writer = csv.writer(csvfile, delimiter=",")
                 writer.writerow(["filename",
                                     "epsilon_pct",
@@ -113,7 +110,7 @@ class TestSHRINK(unittest.TestCase):
             print(f"Shrink: BaseEpsilon = {base_epsilon}")
 
             # 1. Read dataset
-            ts = TimeSeriesReader.get_time_series(DATA_PATH + filename)
+            ts = TimeSeriesReader.get_time_series(DATA_PATH + "/" + filename)
             print(f"{filename}: {ts.size/1024/1024:.2f}MB")
 
             # 2. Extract Base
@@ -132,7 +129,7 @@ class TestSHRINK(unittest.TestCase):
             original_base_size = shrink.save_bytes(binary, filename)
 
             # 3. Entropy coding for Base
-            inpath = BASE_FOLDER + "/" + filename.split(".")[0].split("/")[2] + "_base.bin"
+            inpath = BASE_FOLDER + "/" + filename.split(".")[0].split("/")[1] + "_base.bin"
             compress(inpath, TURBO_RANGE_CODER_CODES_BASE_PATH)
             base_time = int(shrink.base_time)
             base_size = os.path.getsize(TURBO_RANGE_CODER_CODES_BASE_PATH)
@@ -194,7 +191,7 @@ class TestSHRINK(unittest.TestCase):
                     + f"{self.decompression_base_time +self.decompression_results_time}ms"
                 )
                 if save:
-                    with open("data/shrink_results/"+filenames[0].split("/")[2].split(".")[0]+"_results.csv", "a", newline="") as csvfile:
+                    with open("data/shrink_results/"+filenames[0].split("/")[1].split(".")[0]+"_results.csv", "a", newline="") as csvfile:
                         writer = csv.writer(csvfile, delimiter=",")
                         writer.writerow([filename,
                                         epsilon_pct,
@@ -213,7 +210,7 @@ class TestSHRINK(unittest.TestCase):
                 for segment_list in results:
                     timestamps = [val.init_timestamp for val in segment_list]
                     values = [val.get_b for val in segment_list]
-                    with open("data/decompressed/"+filename.split("/")[2].split(".")[0]+"_e"+str(epsilon_pct)+"_eb"+str(base_epsilon)+"_decompressed.csv", "w", newline="") as csvfile:
+                    with open("data/decompressed/"+filename.split("/")[1].split(".")[0]+"_e"+str(epsilon_pct)+"_eb"+str(base_epsilon)+"_decompressed.csv", "w", newline="") as csvfile:
                         writer = csv.writer(csvfile, delimiter=",")
                         for t, v in zip(timestamps, values):
                             writer.writerow([t, v])
@@ -228,100 +225,78 @@ class TestSHRINK(unittest.TestCase):
             print(f"The average compresstime: {mean_compression_time:.1f}ms \n")
         return ts.data, results
 
-def calc_epsilon_base(file_path: str, percentages: list[float]) -> list[float]:
-    """
-    Calculate the base error threshold (epsilon_b) as a fraction of the data range from a CSV file.
 
-    Parameters:
-    - file_path: Path to the CSV file containing the data.
-    - percentage: The fraction of the data range to use for epsilon_b (e.g., 5 for 5%).
+class BaseEpsilonCalculation():
+    def __init__(self, file_path: str) -> None:
+        values: list[float] = []
+        try:
+            with open(file_path, "r", newline="", encoding="utf-8") as file:
+                reader = csv.reader(file)
+                for row in reader:
+                    try:
+                        value = float(row[1])
+                    except ValueError as e:
+                        continue
+                    values.append(value)
+        except OSError as e:
+            print(e)
+            raise OSError("See print.") from e
+        
+        self.v = np.asarray(values, dtype=float)
 
-    Returns:
-    - epsilon_b: The calculated base error threshold.
-    """
-    values: list[float] = []
-    try:
-        with open(file_path, "r", newline="", encoding="utf-8") as file:
-            reader = csv.reader(file)
-            for row in reader:
-                try:
-                    value = float(row[1])
-                except ValueError as e:
-                    continue
-                values.append(value)
-    except OSError as e:
-        print(e)
-        raise OSError("See print.") from e
+
+    def _snr(self, tau: int) -> float: # type: ignore
+        """Signal-to-Noise Ratio (Eq. 2) for a given quantization level tau."""
+        numerator = np.sum(self.v ** 2) # type: ignore
+        quantized = np.floor(self.v * 2.0 ** (-tau)) * 2.0 ** tau
+        denominator = np.sum((self.v - quantized) ** 2)
+
+        if denominator == 0:
+            return np.inf  # perfect reconstruction at this tau
+        return 10 * np.log10(numerator / denominator) # type: ignore
+
+
+    def _initial_tau(self, eta: float) -> int: # type: ignore
+        """Initial quantization level tau (Eq. 3)."""
+        n = len(self.v) # type: ignore
+        sum_v2 = np.sum(self.v ** 2) # type: ignore
+        tau0 = np.floor(0.5 * np.log2((10 ** (-eta / 10)) * sum_v2 / n)) + 1 # type: ignore
+        return int(tau0)
+
+    def compute_epsilon_base(self, eta: float) -> float:
+        """
+        Compute the default (Base) quantization error threshold epsilon_b.
+
+        This follows the paper's SNR-driven search:
+        1. Get an initial tau from Eq. 3.
+        2. Increase tau step by step, recomputing SNR (Eq. 2) each time,
+            until the SNR drops below the target eta.
+        3. The last tau for which SNR >= eta is the chosen quantization level.
+        4. epsilon_b = 2^tau (from comparing Eq. 1 and Eq. 4).
+
+        Parameters
+        ----------
+        v : array-like
+            The data series (e.g. one shrinking-cone interval / the whole series).
+        eta : float
+            Target SNR threshold (dB) that the quantization must maintain.
+
+        Returns
+        -------
+        float
+            epsilon_b, the default quantization error threshold.
+        """
     
-    # Calculate the data range
-    data_range = max(values) - min(values)
+        tau = self._initial_tau(eta)
 
-    # Calculate epsilon_b
-    epsilon_b: list[float] = []
-    for pct in percentages:
-        epsilon_b.append(round(pct * data_range, 4))
-    return epsilon_b
+        # Search upward while SNR still meets/exceeds the target.
+        while self._snr(tau) >= eta:
+            tau += 1
 
-def count_decimal_places(file_path: str) -> int:
-    # Load the CSV file
-    df = pd.read_csv(file_path, header=None, names=['timestamp', 'value']) # type: ignore
+        # Step back to the last tau that satisfied SNR >= eta.
+        tau -= 1
 
-    # Convert 'value' column to string to count decimal places
-    df['value'] = df['value'].astype(str) # type: ignore
-
-    # Function to count decimal places
-    def decimal_places(value: str):
-        if '.' in value:
-            return len(value.split('.')[1].rstrip('0'))
-        else:
-            return 0
-
-    # Apply the function to each value
-    df['decimal_places'] = df['value'].apply(decimal_places) # type: ignore
-
-    # Count the maximum number of decimal places
-    max_decimal_places = df['decimal_places'].max()
-
-    return max_decimal_places
-
-def process_directory(directory_path: str):
-    # Iterate over all files in the directory
-    for filename in os.listdir(directory_path):
-        if filename.endswith('.csv'):
-            file_path = os.path.join(directory_path, filename)
-            max_decimal_places = count_decimal_places(file_path)
-            print(f"File: {filename}, Maximum number of decimal places: {max_decimal_places}")
-
-
-if __name__ == "__main__":
-    files = [
-        "/BeijingPM10Quality_TEST_dim0.csv",
-    ]
-    base_percentages = [0.01, 0.02, 0.05, 0.075, 0.1, 0.15]
-    num_files = len(base_percentages)
-
-    for filename in files:
-        train_df: pd.DataFrame = pd.read_csv("data" + filename, sep=",", header=None, index_col=0)
-        nan_count: int = missing_value_count(train_df)
-        if nan_count > 0:
-            filename = preprocessing_and_save_as_csv(filename, PREPROCESSING_TYPE)
-            train_df: pd.DataFrame = pd.read_csv(filename, sep=",", header=None, index_col=0)
-        nan_count: int = missing_value_count(train_df)
-        if nan_count > 0:
-            print("Error in preprocessing.")
-            exit()
-        files = [filename[4:]]   * num_files
-        in_base_epsilons = calc_epsilon_base(filename, base_percentages)
-
-        num_decimals = count_decimal_places(filename)
-        print(f"Number of decimals for file: {filename} is {num_decimals}.")
-        if num_decimals < 3:
-            in_epsilons = [0.01, 0.0075, 0.005, 0.0025, 0.001]
-        else:
-            in_epsilons = [0.01, 0.0075, 0.005, 0.0025, 0.001, 0.00075, 0.0005, 0.00025, 0.0001] # when decimal >= 3
-        print(f"Epsilons are therefore {in_epsilons}.")
-        test = TestSHRINK()
-        originaldata, test_results = test.run_shrink_test(
-            files, in_epsilons, in_base_epsilons, True
-        )
+        epsilon_b = 2.0 ** tau
+        print(f"e_b: {epsilon_b}")
+        return epsilon_b
 

@@ -19,12 +19,14 @@ from tsai.all import * # type: ignore
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from data_preprocessing import missing_value_count, PreprocessingType, generate_X_y, make_ts_splits, preprocessing_and_save_as_csv
+from shrink_test import TestSHRINK, BaseEpsilonCalculation
+
 
 PREPROCESSING_TYPE = PreprocessingType.INTERPOLATION
 
 # Data set settings
-DATASET = "BeijingPM10Quality"
-DIMENSION = "0"
+DATASET = "BIDMC32"
+DIMENSION = "AVR"
 test_file = "/" + DATASET + "_TEST_dim" + DIMENSION + ".csv"
 train_file = "/" + DATASET + "_TRAIN_dim" + DIMENSION + ".csv"
 # compressed_test_file = "/decompressed/" + DATASET + "_TEST_dim" + DIMENSION + "_e0.01_eb0.02_decompressed.csv"
@@ -131,6 +133,27 @@ if __name__ == "__main__":
     print(f"Number of variables in learner: {learn.dls.vars} and length of data loader: {learn.dls.len}.")
     probas, _, preds = learn.get_X_preds(X_test, bs=BATCH_SIZE)
     rmse_test = skm.root_mean_squared_error(y_test, preds) # type: ignore
+
+    """
+    Part 4: Compressed test data.
+    """
+    temp_test_file = test_file
+    train_df: pd.DataFrame = pd.read_csv("data" + temp_test_file, sep=",", header=None, index_col=0)
+    nan_count: int = missing_value_count(train_df)
+    if nan_count > 0:
+        temp_test_file = preprocessing_and_save_as_csv(temp_test_file, PREPROCESSING_TYPE)
+        train_df: pd.DataFrame = pd.read_csv("data" + temp_test_file, sep=",", header=None, index_col=0)
+    nan_count: int = missing_value_count(train_df)
+    if nan_count > 0:
+        print("Error in preprocessing.")
+        exit()
+    base_epsilon = BaseEpsilonCalculation("data" + temp_test_file).compute_epsilon_base(25)
+    residual_epsilon = [base_epsilon - 0.0001]
+    test = TestSHRINK()
+    originaldata, test_results = test.run_shrink_test(
+        [temp_test_file], residual_epsilon, [base_epsilon], True
+    )
+
 
     """
     Part 5: Inferring model on SHRINK compressed then uncompressed test data.

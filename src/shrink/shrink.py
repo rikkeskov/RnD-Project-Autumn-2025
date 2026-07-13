@@ -472,7 +472,7 @@ class Shrink:
 
     def save_bytes(self, in_bytes: bytes, filename: str) -> int:
         "Saves bytearray to filename"
-        path = BASE_FOLDER + "/" + filename.split(".")[0].split("/")[2] + "_base.bin"
+        path = BASE_FOLDER + "/" + filename.split(".")[0].split("/")[1] + "_base.bin"
         with open(path, "wb") as file:
             file.write(in_bytes)
         base_size = os.path.getsize(path)
