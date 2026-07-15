@@ -62,6 +62,109 @@ def find_lr_helper_func(learn: Learner) -> float:
     best_lr = lrs[best_idx]
     return best_lr
 
+def save_combined_results(
+    shrink_results_file: str,
+    regression_results: list[tuple[str, float, float]],
+    train_file: str,
+    test_file: str,
+    train_rmse: float,
+    test_rmse: float,
+    training_time: float,
+    test_inference_time: float,
+    output_file: str
+):
+    """
+    Combine SHRINK statistics and regression results into one CSV.
+
+    SHRINK csv:
+    filename, base_epsilon, compression_ratio,
+    compression_time, decompression_time
+
+    Regression:
+    filename, rmse, inference_time
+    """
+
+    # Load SHRINK results
+    shrink_df = pd.read_csv(shrink_results_file)
+
+    combined_results = []
+
+    # Add original training result
+    combined_results.append({ # type: ignore
+        "filename": train_file,
+        "base_epsilon": None,
+        "compression_ratio_base_only": None,
+        "compression_ratio": None,
+        "compression_time": None,
+        "decompression_time": None,
+        "rmse": train_rmse,
+        "inference_time": training_time
+    })
+
+    # Add original test result
+    combined_results.append({ # type: ignore
+        "filename": test_file,
+        "base_epsilon": 0,
+        "compression_ratio_base_only": 1,
+        "compression_ratio": 1,
+        "compression_time": 0,
+        "decompression_time": 0,
+        "rmse": test_rmse,
+        "inference_time": test_inference_time
+    })
+
+
+    # Add SHRINK results
+    for filename, rmse, inference_time in regression_results:
+
+        # Example filename:
+        # BIDMC32_TEST_dimAVR_e0.0_eb0.0625_decompressed.csv
+
+        base_epsilon = float(
+            filename.split("_eb")[1]
+            .split("_decompressed")[0]
+        )
+
+        shrink_row = shrink_df[ # type: ignore
+            (shrink_df["base_epsilon"] == base_epsilon)
+        ]
+
+        if shrink_row.empty: # type: ignore
+            print(
+                f"Warning: no SHRINK result found for {filename}"
+            )
+            continue
+
+        shrink_row = shrink_row.iloc[0] # type: ignore
+
+        combined_results.append({ # type: ignore
+            "filename": filename,
+            "base_epsilon": shrink_row["base_epsilon"],
+            "compression_ratio_base_only": shrink_row["compression_ratio_base_only"],
+            "compression_ratio": shrink_row["compression_ratio"],
+            "compression_time": shrink_row["compression_time"],
+            "decompression_time": shrink_row["decompression_time"],
+            "rmse": rmse,
+            "inference_time": inference_time
+        })
+
+
+    combined_df = pd.DataFrame(combined_results) # type: ignore
+
+    os.makedirs(
+        os.path.dirname(output_file),
+        exist_ok=True
+    )
+
+    combined_df.to_csv(
+        output_file,
+        index=False
+    )
+
+    print(
+        f"Saved combined results to {output_file}"
+    )
+
 if __name__ == "__main__":
     """
     Part 1: Preprocessing. Filling missing values in training set
@@ -128,26 +231,19 @@ if __name__ == "__main__":
     rmse_test = skm.root_mean_squared_error(y_test, preds) # type: ignore
 
     """
-    Part 4: Compress and decompress test data if not already done.
+    Part 4: Compress and decompress test data.
     """
-    if os.path.exists(SHRINK_RESULTS_FILE_1) or os.path.exists(SHRINK_RESULTS_FILE_2):
-        print(
-            f"SHRINK results already exist. Skipping SHRINK compression/decompression.")
-    else:
-        print("No SHRINK results found. Running SHRINK.")
+    preprocessing(test_file, PREPROCESSING_TYPE)
 
-        preprocessing(test_file, PREPROCESSING_TYPE)
-
-        scaling_factors = [20, 25, 30, 35, 40]
-        calculator = BaseEpsilonCalculation(test_file)
-        base_epsilons = [
-            calculator.compute_epsilon_base(f)
-            for f in scaling_factors
-        ]
-        residual_epsilons = [float(val) for val in np.linspace(0, 1, 11)]
-        TestSHRINK().run_shrink_test(
-            [test_file]*len(base_epsilons), residual_epsilons, base_epsilons, True
-        )
+    scaling_factors = [20, 25, 30, 35, 40]
+    calculator = BaseEpsilonCalculation(test_file)
+    base_epsilons = [
+        calculator.compute_epsilon_base(f)
+        for f in scaling_factors
+    ]
+    TestSHRINK().run_shrink_test(
+        [test_file]*len(base_epsilons), [0], base_epsilons, True
+    )
 
 
     """
@@ -168,11 +264,17 @@ if __name__ == "__main__":
             print(f"Too few data points in time series to generate one batch for file: {file}.")
 
     """
-    Part 6: Save statistics in CSV.
+    Part 6: Save combined statistics.
     """
-    with open(f"data/tsai_results/{DATASET}_dim{DIMENSION}_{str(CHOSEN_MODEL.__name__)}_wl{WINDOW_LENGTH}.csv", 'w', newline='') as f:
-        writer = csv.writer(f)
-        writer.writerow(['filename', 'rmse', 'duration'])  # Header
-        writer.writerow([train_file, rmse_val, training_time]) # Train rmse
-        writer.writerow([test_file, rmse_test, uncompressed_inference_time]) # Test uncompressed rmse
-        writer.writerows(results)  # Write all rows
+
+    save_combined_results(
+        shrink_results_file=SHRINK_RESULTS_FILE_1,
+        regression_results=results,
+        train_file=train_file,
+        test_file=test_file,
+        train_rmse=rmse_val,
+        test_rmse=rmse_test,
+        training_time=training_time,
+        test_inference_time=uncompressed_inference_time,
+        output_file=f"data/results/{DATASET}_dim{DIMENSION}_{CHOSEN_MODEL.__name__}_combined.csv"
+    )

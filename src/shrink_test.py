@@ -93,6 +93,7 @@ class TestSHRINK(unittest.TestCase):
                 writer.writerow(["filename",
                                     "epsilon_pct",
                                     "base_epsilon",
+                                    "compression_ratio_base_only",
                                     "compression_ratio",
                                     "compression_time",
                                     "decompression_time"
@@ -167,7 +168,8 @@ class TestSHRINK(unittest.TestCase):
                     decoding_base_time = self.decompression_base_time
 
                 print(
-                    f"Epsilon: {epsilon_pct }\t"
+                    f"Epsilon: {epsilon_pct} \t "
+                    + f"Compression Ratio no residuals: {ts.size/base_size :.5f} \t "
                     + f"Compression Ratio: {compression_ratio:.5f} \t "
                     + f"baseSize: {base_size/1024 :.3f}KB \t "
                     + f"residualSize: {residual_size/1024 :.3f}KB \t"
@@ -183,6 +185,7 @@ class TestSHRINK(unittest.TestCase):
                         writer.writerow([filename,
                                         epsilon_pct,
                                         base_epsilon,
+                                        ts.size/base_size,
                                         compression_ratio,
                                         base_time + residual_time,
                                         self.decompression_base_time +self.decompression_results_time

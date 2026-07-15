@@ -27,8 +27,6 @@ from tsai.all import *  # type: ignore
 # Ensure project root is on sys.path so absolute imports work when running this module as a script
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from shrink.constants import DATA_PATH
-
 class PreprocessingType(Enum):
     MEAN = 0
     INTERPOLATION = 1
@@ -40,7 +38,7 @@ def missing_value_count(df: pd.DataFrame) -> int:
     return count
 
 def fill_by_mean(filename: str) -> pd.DataFrame:
-    df: pd.DataFrame = pd.read_csv(DATA_PATH + filename, sep=",", header=None, index_col=0)
+    df: pd.DataFrame = pd.read_csv(filename, sep=",", header=None, index_col=0)
     nan_count: int = missing_value_count(df)
     if nan_count > 0:
         mean_imputed_df: pd.DataFrame = df.copy() # type: ignore
@@ -52,7 +50,7 @@ def fill_by_mean(filename: str) -> pd.DataFrame:
     return df
 
 def fill_by_interpolation(filename: str) -> pd.DataFrame:
-    df: pd.DataFrame = pd.read_csv(DATA_PATH + filename, sep=",", header=None, index_col=0)
+    df: pd.DataFrame = pd.read_csv(filename, sep=",", header=None, index_col=0)
     nan_count: int = missing_value_count(df)
     if nan_count > 0:
         interpolated_df: pd.DataFrame = df.copy() # type: ignore
@@ -63,7 +61,7 @@ def fill_by_interpolation(filename: str) -> pd.DataFrame:
     return df
 
 def fill_by_knn(filename: str, k: int = 5) -> pd.DataFrame:
-    df: pd.DataFrame = pd.read_csv(DATA_PATH + filename, sep=",", header=None, index_col=0)
+    df: pd.DataFrame = pd.read_csv(filename, sep=",", header=None, index_col=0)
     nan_count: int = missing_value_count(df)
     if nan_count > 0:
         knn_imputed_df: pd.DataFrame = df.copy() # type: ignore
@@ -84,10 +82,10 @@ def preprocessing_and_save_as_csv(filename: str, preprocessing_type: Preprocessi
     else:
         print(f"Could not understand preprocessing type. {filename} not preprocessed.")
         exit()
-    full_out_path: str = output_path + filename.split(".")[0] + f"_{preprocessing_type.name}.csv"
+    full_out_path: str = output_path + filename[4:].split(".")[0] + f"_{preprocessing_type.name}.csv"
     df.to_csv(full_out_path, header=False)
     # pd_dataframe_to_csv(df, full_out_path)
-    return full_out_path[4:]
+    return full_out_path
 
 def generate_X_y(file: str, window_length: int, horizon: int, stride: int | None) -> tuple[Any]:
     # load as pandas df
