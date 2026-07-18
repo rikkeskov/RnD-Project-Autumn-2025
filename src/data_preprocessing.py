@@ -72,7 +72,7 @@ def fill_by_knn(filename: str, k: int = 5) -> pd.DataFrame:
     print("Return type after imputation is not pandas df.")
     return df
 
-def preprocessing_and_save_as_csv(filename: str, preprocessing_type: PreprocessingType, output_path: str = "data/preprocessed", k: int = 5) -> str:
+def preprocessing_and_save_as_csv(filename: str, preprocessing_type: PreprocessingType, output_path: str = "data", k: int = 5) -> str:
     if preprocessing_type == PreprocessingType.MEAN:
         df = fill_by_mean(filename)
     elif preprocessing_type == PreprocessingType.INTERPOLATION:
@@ -108,7 +108,7 @@ def make_ts_splits(X: Any, valid_pct: float=0.2) -> tuple[list[int], list[int]]:
 
     return train_idx, valid_idx
 
-def preprocessing(path: str, preprocessing_type: PreprocessingType) -> pd.DataFrame:
+def preprocessing(path: str, preprocessing_type: PreprocessingType) -> str:
     df: pd.DataFrame = pd.read_csv(path, sep=",", header=None, index_col=0)
     nan_count: int = missing_value_count(df)
     if nan_count > 0:
@@ -118,4 +118,4 @@ def preprocessing(path: str, preprocessing_type: PreprocessingType) -> pd.DataFr
     if nan_count > 0:
         print("Error in preprocessing.")
         exit()
-    return df
+    return path

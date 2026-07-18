@@ -182,7 +182,7 @@ class TestSHRINK(unittest.TestCase):
                 if save:
                     with open("data/shrink_results/"+filenames[0].split("/")[1].split(".")[0]+"_results.csv", "a", newline="") as csvfile:
                         writer = csv.writer(csvfile, delimiter=",")
-                        writer.writerow([filename,
+                        writer.writerow([filename[4:],
                                         epsilon_pct,
                                         base_epsilon,
                                         ts.size/base_size,

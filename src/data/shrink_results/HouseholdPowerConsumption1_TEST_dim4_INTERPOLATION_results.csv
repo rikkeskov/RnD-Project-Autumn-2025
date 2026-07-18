@@ -1,0 +1,6 @@
+filename,epsilon_pct,base_epsilon,compression_ratio_base_only,compression_ratio,compression_time,decompression_time
+/HouseholdPowerConsumption1_TEST_dim4_INTERPOLATION.csv,0,2.0,129.26138333403796,23.729622644438237,2006,1437
+/HouseholdPowerConsumption1_TEST_dim4_INTERPOLATION.csv,0,1.0,108.87470621750587,26.647197503856646,1979,1265
+/HouseholdPowerConsumption1_TEST_dim4_INTERPOLATION.csv,0,1.0,108.87470621750587,26.647197503856646,2334,1373
+/HouseholdPowerConsumption1_TEST_dim4_INTERPOLATION.csv,0,1.0,108.87470621750587,26.647197503856646,1883,1387
+/HouseholdPowerConsumption1_TEST_dim4_INTERPOLATION.csv,0,1.0,108.87470621750587,26.647197503856646,2322,1522

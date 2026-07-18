@@ -1,0 +1,5 @@
+filename,base_epsilon,compression_ratio_base_only,compression_ratio,compression_time,decompression_time,rmse,inference_time
+data/BeijingPM10Quality_TRAIN_dim0_INTERPOLATION.csv,,,,,,12.891175270080566,384.3888294999997
+data/BeijingPM10Quality_TEST_dim0_INTERPOLATION.csv,0.0,1.0,1.0,0.0,0.0,16.15100245608109,2.356005699999514
+BeijingPM10Quality_TEST_dim0_INTERPOLATION_e0_eb1.0_decompressed.csv,1.0,13.650616847399023,8.753949457028396,799.0,344.0,16.212044958378296,2.034791399993992
+BeijingPM10Quality_TEST_dim0_INTERPOLATION_e0_eb2.0_decompressed.csv,2.0,17.27074116418949,8.63322482854587,844.0,191.0,16.32787354258369,2.0362447000006796
