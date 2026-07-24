@@ -28,11 +28,11 @@ from shrink_test import TestSHRINK, BaseEpsilonCalculation
 
 # Data set settings
 PREPROCESSING_TYPE = PreprocessingType.INTERPOLATION
-DATASET = "HouseholdPowerConsumption1"
-DIMENSIONS = ["0", "1", "4"]
+DATASET = "BeijingPM10Quality"
+DIMENSIONS = ["0", "1", "2", "3"]
 
 # X y generation settings
-WINDOW_LENGTH = 150
+WINDOW_LENGTH = 100
 HORIZON = 1
 STRIDE = None
 
@@ -285,5 +285,5 @@ if __name__ == "__main__":
             test_rmse=rmse_test,
             training_time=training_time,
             test_inference_time=uncompressed_inference_time,
-            output_file=f"data/results/{DATASET}_dim{dimension}_{CHOSEN_MODEL.__name__}_combined.csv"
+            output_file=f"data/results/{DATASET}_dim{dimension}_{CHOSEN_MODEL.__name__}_{PREPROCESSING_TYPE.name}_combined.csv"
         )
