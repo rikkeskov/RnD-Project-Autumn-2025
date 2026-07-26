@@ -27,9 +27,9 @@ from shrink_test import TestSHRINK, BaseEpsilonCalculation
 
 
 # Data set settings
-PREPROCESSING_TYPE = PreprocessingType.INTERPOLATION
-DATASET = "BeijingPM10Quality"
-DIMENSIONS = ["0", "1", "2", "3"]
+PREPROCESSING_TYPE = PreprocessingType.KNN
+DATASET = "HouseholdPowerConsumption1"
+DIMENSIONS = ["0", "1", "4"]
 
 # X y generation settings
 WINDOW_LENGTH = 100
