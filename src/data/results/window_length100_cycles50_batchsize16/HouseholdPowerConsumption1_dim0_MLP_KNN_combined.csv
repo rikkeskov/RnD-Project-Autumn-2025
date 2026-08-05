@@ -1,0 +1,7 @@
+filename,base_epsilon,compression_ratio_base_only,compression_ratio,compression_time,decompression_time,rmse,inference_time
+data/HouseholdPowerConsumption1_TRAIN_dim0_KNN.csv,,,,,,3.1117188930511475,263.097005299991
+data/HouseholdPowerConsumption1_TEST_dim0_KNN.csv,0.0,1.0,1.0,0.0,0.0,3.6850969963863265,0.9196489999303594
+HouseholdPowerConsumption1_TEST_dim0_KNN_e0_eb16.0_decompressed.csv,16.0,233713.2063492064,13.99854157416818,1310.0,1162.0,1.0924026232990198,0.885216600028798
+HouseholdPowerConsumption1_TEST_dim0_KNN_e0_eb32.0_decompressed.csv,32.0,377536.71794871794,14.796330444866731,1424.0,1512.0,16.514175415039062,0.8818645999999717
+HouseholdPowerConsumption1_TEST_dim0_KNN_e0_eb4.0_decompressed.csv,4.0,734.9105066134265,5.4786010228704,1687.0,1694.0,3.4031342944226726,0.9319468999747187
+HouseholdPowerConsumption1_TEST_dim0_KNN_e0_eb8.0_decompressed.csv,8.0,5304.010086455332,6.476020492538732,1446.0,1609.0,2.9857546450374666,0.8791212999494746

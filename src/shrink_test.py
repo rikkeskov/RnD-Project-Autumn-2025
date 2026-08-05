@@ -287,6 +287,17 @@ class BaseEpsilonCalculation():
         tau -= 1
 
         epsilon_b = 2.0 ** tau
-        print(f"e_b: {epsilon_b}")
+        print(f"SNR: {eta} \t e_b: {epsilon_b}")
         return epsilon_b
 
+if __name__ == "__main__":
+    test_file = "data/BeijingPM10Quality_TEST_dim3_INTERPOLATION.csv"
+    scaling_factors = [20, 25, 30, 35, 40]
+    calculator = BaseEpsilonCalculation(test_file)
+    base_epsilons = [
+        calculator.compute_epsilon_base(f)
+        for f in scaling_factors
+    ]
+    # TestSHRINK().run_shrink_test(
+    #     [test_file]*len(base_epsilons), [0], [1.0, 0.5, 0.25, 0.125, 0.0625], True
+    # )

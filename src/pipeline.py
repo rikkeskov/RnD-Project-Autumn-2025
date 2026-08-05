@@ -23,16 +23,16 @@ from data_preprocessing import (
     make_ts_splits,
     preprocessing
 )
-from shrink_test import TestSHRINK, BaseEpsilonCalculation
+# from shrink_test import TestSHRINK, BaseEpsilonCalculation
 
 
 # Data set settings
-PREPROCESSING_TYPE = PreprocessingType.KNN
-DATASET = "HouseholdPowerConsumption1"
-DIMENSIONS = ["0", "1", "4"]
+PREPROCESSING_TYPE = PreprocessingType.MEAN
+DATASET = "BIDMC32"
+DIMENSIONS = ["AVR"]
 
 # X y generation settings
-WINDOW_LENGTH = 100
+WINDOW_LENGTH = 70
 HORIZON = 1
 STRIDE = None
 
@@ -239,18 +239,18 @@ if __name__ == "__main__":
         uncompressed_inference_time = time.perf_counter() - inference_start
         rmse_test = skm.root_mean_squared_error(y_test, preds) # type: ignore
 
-        """
-        Part 4: Compress and decompress test data.
-        """
-        scaling_factors = [20, 25, 30, 35, 40]
-        calculator = BaseEpsilonCalculation(test_file)
-        base_epsilons = [
-            calculator.compute_epsilon_base(f)
-            for f in scaling_factors
-        ]
-        TestSHRINK().run_shrink_test(
-            [test_file]*len(base_epsilons), [0], base_epsilons, True
-        )
+        # """
+        # Part 4: Compress and decompress test data.
+        # """
+        # scaling_factors = [20, 25, 30, 35, 40]
+        # calculator = BaseEpsilonCalculation(test_file)
+        # base_epsilons = [
+        #     calculator.compute_epsilon_base(f)
+        #     for f in scaling_factors
+        # ]
+        # TestSHRINK().run_shrink_test(
+        #     [test_file]*len(base_epsilons), [0], base_epsilons, True
+        # )
 
 
         """
@@ -259,7 +259,7 @@ if __name__ == "__main__":
         results: list[tuple[str, float, float]] = []  # List to store (filename, rmse) tuples
         compressed_test_files = [
             f for f in os.listdir("data/decompressed")
-            if DATASET in f and f"_dim{dimension}_" in f
+            if DATASET in f and f"_dim{dimension}_" in f and PREPROCESSING_TYPE.name in f
         ]
         for file in compressed_test_files:
             X_test_comp, y_test_comp = generate_X_y("data/decompressed/" + file, WINDOW_LENGTH, HORIZON, STRIDE) # type: ignore
